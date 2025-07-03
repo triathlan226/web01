@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智文老師的抽獎程式</title>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #ffa500, #ffcc00, #ff8c00);
+            --primary-color: #ffa500;
+            --secondary-color: #ffcc00;
+            --accent-color: #ff8c00;
+            --bg-dark: #121212;
+            --bg-darker: #0a0a0a;
+            --text-light: #ffffff;
+            --text-dim: rgba(255, 255, 255, 0.7);
+            --panel-bg: rgba(30, 30, 30, 0.7);
+            --glow: 0 0 15px rgba(255, 165, 0, 0.7);
+            --border-glow: 0 0 8px rgba(255, 165, 0, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-darker), var(--bg-dark));
+            color: var(--text-light);
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Star background */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            animation: twinkle var(--duration, 4s) infinite ease-in-out;
+            opacity: 0;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: var(--brightness, 0.7); transform: scale(1); }
+        }
+
+        .container {
+            width: 100%;
+            height: 100vh;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            padding: 8px 0;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            font-size: 2rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: var(--glow);
+            letter-spacing: 2px;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            gap: 15px;
+            overflow: hidden;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border-radius: 15px;
+            padding: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 165, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item-panel {
+            flex: 0 0 280px;
+            max-width: 280px;
+        }
+
+        .grid-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        h2 {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: var(--secondary-color);
+            text-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
+            text-align: center;
+        }
+
+        /* Item management */
+        .item-form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-group {
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 3px;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            background: rgba(30, 30, 30, 0.8);
+            color: var(--text-light);
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: var(--border-glow);
+        }
+
+        button {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            background: var(--primary-gradient);
+            color: var(--text-light);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            font-size: 0.85rem;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transform: rotate(45deg);
+            transition: all 0.5s ease;
+            opacity: 0;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--glow);
+        }
+
+        button:hover::before {
+            animation: shine 1.5s infinite;
+        }
+
+        @keyframes shine {
+            0% { left: -100%; opacity: 0.7; }
+            100% { left: 100%; opacity: 0; }
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .item-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 8px;
+            padding-right: 5px;
+        }
+
+        .item-list::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .item-list::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .item-list::-webkit-scrollbar-thumb {
+            background: var(--primary-gradient);
+            border-radius: 10px;
+        }
+
+        .item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            margin-bottom: 6px;
+            background: rgba(50, 50, 50, 0.5);
+            border-radius: 6px;
+            border-left: 3px solid var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .item:hover {
+            background: rgba(60, 60, 60, 0.7);
+            transform: translateX(3px);
+        }
+
+        .item-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .item-name {
+            font-weight: bold;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .item-probability {
+            color: var(--secondary-color);
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .delete-btn {
+            background: rgba(255, 60, 60, 0.3);
+            color: #ff6b6b;
+            border: none;
+            border-radius: 4px;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .delete-btn:hover {
+            background: rgba(255, 60, 60, 0.5);
+            transform: scale(1.1);
+        }
+
+        /* Grid system - 更扁平的設計 */
+        .grid-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .lottery-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 8px;
+            width: 100%;
+            height: 100%;
+            max-width: 1000px;
+            max-height: 400px;
+        }
+
+        .grid-cell {
+            background: rgba(40, 40, 40, 0.6);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+            text-align: center;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+            cursor: default;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 165, 0, 0.1);
+            word-break: break-word;
+            line-height: 1.1;
+            min-height: 0;
+        }
+
+        .grid-cell.border-cell {
+            background: rgba(50, 50, 50, 0.7);
+            border: 2px solid rgba(255, 165, 0, 0.3);
+            font-weight: bold;
+        }
+
+        .grid-cell.border-cell:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(255, 165, 0, 0.3);
+        }
+
+        .grid-cell.highlight {
+            background: var(--primary-gradient);
+            transform: scale(1.08);
+            box-shadow: var(--glow);
+            z-index: 1;
+            animation: pulse 1s infinite alternate;
+        }
+
+        .grid-cell.winner {
+            background: linear-gradient(135deg, #ff5e00, #ff0000, #ff8c00);
+            transform: scale(1.12);
+            box-shadow: 0 0 20px rgba(255, 94, 0, 0.8);
+            z-index: 2;
+            animation: winner-pulse 0.8s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1.05); box-shadow: 0 0 10px rgba(255, 165, 0, 0.5); }
+            100% { transform: scale(1.08); box-shadow: 0 0 15px rgba(255, 165, 0, 0.8); }
+        }
+
+        @keyframes winner-pulse {
+            0% { transform: scale(1.08); box-shadow: 0 0 15px rgba(255, 94, 0, 0.7); }
+            100% { transform: scale(1.15); box-shadow: 0 0 25px rgba(255, 94, 0, 1); }
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #ff8c00, #ffa500, #ffcc00);
+            padding: 8px 20px;
+            font-size: 1rem;
+            min-width: 90px;
+        }
+
+        .reset-btn {
+            background: linear-gradient(135deg, #555, #777, #999);
+            padding: 8px 20px;
+            font-size: 1rem;
+            min-width: 90px;
+        }
+
+        /* Result modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s ease;
+        }
+
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--panel-bg);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            transform: scale(0.7);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid var(--primary-color);
+            box-shadow: var(--glow), 0 10px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal h3 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .prize-name {
+            font-size: 2.2rem;
+            margin: 15px 0;
+            color: var(--text-light);
+            text-shadow: 0 0 10px rgba(255, 165, 0, 0.8);
+        }
+
+        .close-btn {
+            margin-top: 15px;
+            padding: 10px 25px;
+            font-size: 1rem;
+        }
+
+        /* Confetti */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 99;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--color);
+            opacity: 0.7;
+            animation: confetti-fall var(--fall-duration, 3s) linear forwards;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100px) rotate(0deg) scale(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(calc(100vh + 100px)) rotate(720deg) scale(1);
+                opacity: 0;
+            }
+        }
+
+        /* Text size classes */
+        .grid-cell.text-tiny {
+            font-size: 0.65rem;
+        }
+
+        .grid-cell.text-xs {
+            font-size: 0.7rem;
+        }
+
+        .grid-cell.text-small {
+            font-size: 0.75rem;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .item-panel {
+                flex: 0 0 auto;
+                max-width: 100%;
+                max-height: 200px;
+            }
+            
+            .grid-panel {
+                flex: 1;
+            }
+            
+            .lottery-grid {
+                grid-template-columns: repeat(8, 1fr);
+                grid-template-rows: repeat(5, 1fr);
+                max-height: 300px;
+            }
+            
+            .grid-cell {
+                font-size: 0.65rem;
+                padding: 3px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .grid-cell {
+                font-size: 0.85rem;
+            }
+            
+            .lottery-grid {
+                gap: 10px;
+            }
+        }
+
+        @media (min-width: 1600px) {
+            .grid-cell {
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars"></div>
+    <div class="container">
+        <header>
+            <h1>智文老師的抽獎程式</h1>
+        </header>
+
+        <div class="main-content">
+            <div class="panel item-panel">
+                <h2>品項管理</h2>
+                <div class="item-form">
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="item-name">品項名稱</label>
+                            <input type="text" id="item-name" placeholder="輸入品項名稱">
+                        </div>
+                        <div class="input-group">
+                            <label for="item-probability">機率 (%)</label>
+                            <input type="number" id="item-probability" min="1" max="100" value="10" placeholder="1-100">
+                        </div>
+                    </div>
+                    <button id="add-item-btn">新增品項</button>
+                </div>
+                <div class="item-list" id="item-list">
+                    <!-- Items will be added here dynamically -->
+                </div>
+            </div>
+
+            <div class="panel grid-panel">
+                <h2>抽獎網格</h2>
+                <div class="grid-container">
+                    <div class="lottery-grid" id="lottery-grid">
+                        <!-- Grid cells will be generated dynamically -->
+                    </div>
+                </div>
+                <div class="controls">
+                    <button id="start-btn" class="start-btn">開始</button>
+                    <button id="reset-btn" class="reset-btn">重置</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="result-modal">
+        <div class="modal-content">
+            <h3>恭喜中獎！</h3>
+            <div class="prize-name" id="prize-name">獎品名稱</div>
+            <button class="close-btn" id="close-modal-btn">確定</button>
+        </div>
+    </div>
+
+    <div class="confetti-container" id="confetti-container"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Create stars background
+            createStars();
+
+            // Initialize variables
+            const items = [
+                { name: "iPhone 15", probability: 5 },
+                { name: "AirPods Pro", probability: 10 },
+                { name: "Apple Watch", probability: 15 },
+                { name: "iPad Mini", probability: 8 },
+                { name: "Amazon 禮品卡", probability: 20 },
+                { name: "星巴克咖啡券", probability: 30 },
+                { name: "電影票兩張", probability: 12 }
+            ];
+            
+            // 改為 10x4 的扁平網格
+            const gridSize = { rows: 4, cols: 10 };
+            let isSpinning = false;
+            let borderCells = [];
+            
+            // DOM elements
+            const itemNameInput = document.getElementById('item-name');
+            const itemProbabilityInput = document.getElementById('item-probability');
+            const addItemBtn = document.getElementById('add-item-btn');
+            const itemList = document.getElementById('item-list');
+            const lotteryGrid = document.getElementById('lottery-grid');
+            const startBtn = document.getElementById('start-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const resultModal = document.getElementById('result-modal');
+            const prizeNameElement = document.getElementById('prize-name');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const confettiContainer = document.getElementById('confetti-container');
+            
+            // Initialize the app
+            initializeApp();
+            
+            // Event listeners
+            addItemBtn.addEventListener('click', addItem);
+            itemNameInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') addItem();
+            });
+            startBtn.addEventListener('click', startLottery);
+            resetBtn.addEventListener('click', resetGrid);
+            closeModalBtn.addEventListener('click', closeModal);
+            
+            // Functions
+            function initializeApp() {
+                createGrid();
+                renderItemList();
+                fillGridWithItems();
+            }
+            
+            function createStars() {
+                const starsContainer = document.querySelector('.stars');
+                const starCount = 80;
+                
+                for (let i = 0; i < starCount; i++) {
+                    const star = document.createElement('div');
+                    star.classList.add('star');
+                    
+                    // Random position
+                    const x = Math.random() * 100;
+                    const y = Math.random() * 100;
+                    
+                    // Random size
+                    const size = Math.random() * 3 + 1;
+                    
+                    // Random animation duration and delay
+                    const duration = Math.random() * 3 + 2;
+                    const delay = Math.random() * 5;
+                    const brightness = Math.random() * 0.5 + 0.3;
+                    
+                    star.style.left = `${x}%`;
+                    star.style.top = `${y}%`;
+                    star.style.width = `${size}px`;
+                    star.style.height = `${size}px`;
+                    star.style.setProperty('--duration', `${duration}s`);
+                    star.style.setProperty('--brightness', brightness);
+                    star.style.animationDelay = `${delay}s`;
+                    
+                    starsContainer.appendChild(star);
+                }
+            }
+            
+            function createGrid() {
+                lotteryGrid.innerHTML = '';
+                borderCells = [];
+                
+                for (let row = 0; row < gridSize.rows; row++) {
+                    for (let col = 0; col < gridSize.cols; col++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('grid-cell');
+                        
+                        // Check if this cell is on the border
+                        const isBorderCell = row === 0 || row === gridSize.rows - 1 || 
+                                            col === 0 || col === gridSize.cols - 1;
+                        
+                        if (isBorderCell) {
+                            cell.classList.add('border-cell');
+                            borderCells.push({
+                                element: cell,
+                                row,
+                                col,
+                                index: borderCells.length
+                            });
+                        }
+                        
+                        lotteryGrid.appendChild(cell);
+                    }
+                }
+                
+                // Sort border cells in clockwise order starting from top-left
+                borderCells.sort((a, b) => {
+                    // Top row (left to right)
+                    if (a.row === 0 && b.row === 0) return a.col - b.col;
+                    if (a.row === 0) return -1;
+                    if (b.row === 0) return 1;
+                    
+                    // Right column (top to bottom)
+                    if (a.col === gridSize.cols - 1 && b.col === gridSize.cols - 1) return a.row - b.row;
+                    if (a.col === gridSize.cols - 1) return -1;
+                    if (b.col === gridSize.cols - 1) return 1;
+                    
+                    // Bottom row (right to left)
+                    if (a.row === gridSize.rows - 1 && b.row === gridSize.rows - 1) return b.col - a.col;
+                    if (a.row === gridSize.rows - 1) return -1;
+                    if (b.row === gridSize.rows - 1) return 1;
+                    
+                    // Left column (bottom to top)
+                    return b.row - a.row;
+                });
+            }
+            
+            function addItem() {
+                const name = itemNameInput.value.trim();
+                const probability = parseInt(itemProbabilityInput.value);
+                
+                if (!name) {
+                    alert('請輸入品項名稱');
+                    return;
+                }
+                
+                if (isNaN(probability) || probability < 1 || probability > 100) {
+                    alert('請輸入有效的機率 (1-100%)');
+                    return;
+                }
+                
+                items.push({ name, probability });
+                
+                itemNameInput.value = '';
+                itemProbabilityInput.value = '10';
+                itemNameInput.focus();
+                
+                renderItemList();
+                fillGridWithItems();
+            }
+            
+            function deleteItem(index) {
+                items.splice(index, 1);
+                renderItemList();
+                fillGridWithItems();
+            }
+            
+            function renderItemList() {
+                itemList.innerHTML = '';
+                
+                if (items.length === 0) {
+                    const emptyMessage = document.createElement('div');
+                    emptyMessage.textContent = '尚未新增任何品項';
+                    emptyMessage.style.padding = '10px';
+                    emptyMessage.style.color = 'var(--text-dim)';
+                    emptyMessage.style.textAlign = 'center';
+                    itemList.appendChild(emptyMessage);
+                    return;
+                }
+                
+                items.forEach((item, index) => {
+                    const itemElement = document.createElement('div');
+                    itemElement.classList.add('item');
+                    
+                    const itemInfo = document.createElement('div');
+                    itemInfo.classList.add('item-info');
+                    
+                    const itemName = document.createElement('div');
+                    itemName.classList.add('item-name');
+                    itemName.textContent = item.name;
+                    itemName.title = item.name; // 顯示完整名稱的提示
+                    
+                    const itemProbability = document.createElement('div');
+                    itemProbability.classList.add('item-probability');
+                    itemProbability.textContent = `${item.probability}%`;
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.classList.add('delete-btn');
+                    deleteBtn.innerHTML = '×';
+                    deleteBtn.addEventListener('click', () => deleteItem(index));
+                    
+                    itemInfo.appendChild(itemName);
+                    itemInfo.appendChild(itemProbability);
+                    
+                    itemElement.appendChild(itemInfo);
+                    itemElement.appendChild(deleteBtn);
+                    
+                    itemList.appendChild(itemElement);
+                });
+            }
+            
+            function fillGridWithItems() {
+                if (items.length === 0) {
+                    borderCells.forEach(cell => {
+                        cell.element.textContent = '';
+                        cell.element.classList.remove('text-tiny', 'text-xs', 'text-small');
+                    });
+                    return;
+                }
+                
+                // Calculate total probability
+                const totalProbability = items.reduce((sum, item) => sum + item.probability, 0);
+                
+                // Distribute items based on probability
+                borderCells.forEach(cell => {
+                    let random = Math.random() * totalProbability;
+                    let cumulativeProbability = 0;
+                    
+                    for (const item of items) {
+                        cumulativeProbability += item.probability;
+                        if (random <= cumulativeProbability) {
+                            cell.element.textContent = item.name;
+                            cell.element.title = item.name; // 顯示完整名稱的提示
+                            cell.item = item;
+                            
+                            // Adjust font size based on text length
+                            adjustCellTextSize(cell.element);
+                            break;
+                        }
+                    }
+                });
+            }
+            
+            function adjustCellTextSize(cell) {
+                const textLength = cell.textContent.length;
+                
+                // Remove all text size classes first
+                cell.classList.remove('text-tiny', 'text-xs', 'text-small');
+                
+                // Apply appropriate class based on text length
+                if (textLength > 15) {
+                    cell.classList.add('text-tiny');
+                } else if (textLength > 10) {
+                    cell.classList.add('text-xs');
+                } else if (textLength > 7) {
+                    cell.classList.add('text-small');
+                }
+            }
+            
+            function resetGrid() {
+                if (isSpinning) return;
+                
+                // Clear any highlights
+                borderCells.forEach(cell => {
+                    cell.element.classList.remove('highlight', 'winner');
+                });
+                
+                // Refill grid with items
+                fillGridWithItems();
+            }
+            
+            function startLottery() {
+                if (isSpinning || items.length === 0) return;
+                
+                isSpinning = true;
+                startBtn.disabled = true;
+                resetBtn.disabled = true;
+                addItemBtn.disabled = true;
+                
+                // Clear any previous highlights
+                borderCells.forEach(cell => {
+                    cell.element.classList.remove('highlight', 'winner');
+                });
+                
+                // Determine random steps (between 2-4 full loops plus random extra steps)
+                const minSteps = borderCells.length * 2;
+                const maxSteps = borderCells.length * 4;
+                const totalSteps = Math.floor(Math.random() * (maxSteps - minSteps + 1)) + minSteps;
+                
+                // Animation timing variables
+                let currentStep = 0;
+                let currentCellIndex = 0;
+                let delay = 50; // Start fast
+                const maxDelay = 300; // End slow
+                
+                // Start the animation
+                const animateStep = () => {
+                    // Remove highlight from previous cell
+                    if (currentStep > 0) {
+                        const prevIndex = (currentCellIndex - 1 + borderCells.length) % borderCells.length;
+                        borderCells[prevIndex].element.classList.remove('highlight');
+                    }
+                    
+                    // Add highlight to current cell
+                    borderCells[currentCellIndex].element.classList.add('highlight');
+                    
+                    currentStep++;
+                    
+                    // Move to next cell
+                    currentCellIndex = (currentCellIndex + 1) % borderCells.length;
+                    
+                    // Calculate next delay (gradually slow down)
+                    if (currentStep > totalSteps * 0.7) {
+                        const progress = (currentStep - totalSteps * 0.7) / (totalSteps * 0.3);
+                        delay = delay + (maxDelay - delay) * progress * 0.2;
+                    }
+                    
+                    // Continue or finish
+                    if (currentStep < totalSteps) {
+                        setTimeout(animateStep, delay);
+                    } else {
+                        // Finish animation and show winner
+                        const winnerIndex = (currentCellIndex - 1 + borderCells.length) % borderCells.length;
+                        const winnerCell = borderCells[winnerIndex];
+                        
+                        // Mark as winner with special effect
+                        winnerCell.element.classList.remove('highlight');
+                        setTimeout(() => {
+                            winnerCell.element.classList.add('winner');
+                            showWinner(winnerCell.item);
+                        }, 300);
+                        
+                        // Re-enable controls
+                        setTimeout(() => {
+                            isSpinning = false;
+                            startBtn.disabled = false;
+                            resetBtn.disabled = false;
+                            addItemBtn.disabled = false;
+                        }, 1000);
+                    }
+                };
+                
+                // Start animation
+                animateStep();
+            }
+            
+            function showWinner(item) {
+                if (!item) return;
+                
+                // Show confetti
+                createConfetti();
+                
+                // Show modal with winner
+                prizeNameElement.textContent = item.name;
+                resultModal.classList.add('show');
+            }
+            
+            function closeModal() {
+                resultModal.classList.remove('show');
+            }
+            
+            function createConfetti() {
+                confettiContainer.innerHTML = '';
+                const colors = ['#ffa500', '#ffcc00', '#ff8c00', '#ff5e00', '#ff0000', '#00ff00', '#0000ff', '#ff00ff'];
+                const confettiCount = 150;
+                
+                for (let i = 0; i < confettiCount; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.classList.add('confetti');
+                    
+                    // Random position
+                    const x = Math.random() * 100;
+                    
+                    // Random shape
+                    const shape = Math.random() < 0.5 ? '50%' : '0%';
+                    
+                    // Random size
+                    const size = Math.random() * 8 + 5;
+                    
+                    // Random color
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    
+                    // Random animation duration
+                    const fallDuration = Math.random() * 3 + 2;
+                    
+                    confetti.style.left = `${x}%`;
+                    confetti.style.width = `${size}px`;
+                    confetti.style.height = `${size}px`;
+                    confetti.style.borderRadius = shape;
+                    confetti.style.setProperty('--color', color);
+                    confetti.style.background = color;
+                    confetti.style.setProperty('--fall-duration', `${fallDuration}s`);
+                    
+                    confettiContainer.appendChild(confetti);
+                }
+                
+                // Remove confetti after animation completes
+                setTimeout(() => {
+                    confettiContainer.innerHTML = '';
+                }, 5000);
+            }
+            
+            // Handle Enter key for adding items
+            itemProbabilityInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') addItem();
+            });
+        });
+    </script>
+</body>
+</html>
