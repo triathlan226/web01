@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>陳智文</title>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            background: #f5f5f5;
+            text-align: center;
+        }
+        h1 {
+            margin-top: 40px;
+            color: #2c3e50;
+        }
+        #canvas-holder {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 400px;
+            margin: 40px 0;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 1.2em;
+            color: #34495e;
+        }
+        .logo {
+            margin-top: 15px;
+            width: 120px;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>陳智文</h1>
+    <div id="canvas-holder"></div>
+    <div class="footer">
+        花蓮高中<br>
+            </div>
+    <script>
+        let desc = "一個伏羲，女媧之兄，八卦創始者，教人漁獵與婚配，是華夏文化的始祖之一。";
+        let headAngle = 0;
+        let headDir = 1;
+
+        function setup() {
+            let canvas = createCanvas(650, 470);
+            canvas.parent('canvas-holder');
+            angleMode(DEGREES);
+        }
+
+        function draw() {
+            background(255);
+
+            // 動態頭部搖擺
+            headAngle += headDir * 0.8;
+            if (headAngle > 15 || headAngle < -15) headDir *= -1;
+
+            push();
+            translate(width/2, height/2 - 40);
+
+            // 頭部
+            push();
+            rotate(headAngle);
+            fill(255, 224, 185);
+            ellipse(0, -60, 60, 70);
+            pop();
+
+            // 身體
+            fill(200, 170, 120);
+            rect(-20, -25, 40, 80, 20);
+
+            // 手臂
+            stroke(200, 170, 120);
+            strokeWeight(10);
+            line(-20, -10, -60, 40);
+            line(20, -10, 60, 40);
+            noStroke();
+
+            // 腿部（蛇尾造型，與身體結合且更有蛇形變化）
+            stroke(100, 200, 150);
+            strokeWeight(12);
+            noFill();
+            beginShape();
+            let bodyBaseX = 0;
+            let bodyBaseY = 55; // 身體底部
+            for(let a=0; a<=180; a+=10){
+                // 增加蛇形波動與身體連接
+                let r = 60 + 18 * sin(a * 2.5);
+                let x = bodyBaseX + r * cos(a);
+                let y = bodyBaseY + r * sin(a) + 10 * sin(a * 1.2);
+                vertex(x, y);
+            }
+            endShape();
+
+            // 八卦環繞
+            for(let i=0; i<8; i++){
+                let angle = i*45;
+                let x = 120*cos(angle);
+                let y = 120*sin(angle);
+                drawBagua(x, y, angle);
+            }
+            pop();
+
+            // 文字說明
+            fill(60);
+            textSize(18);
+            textAlign(CENTER, TOP);
+            text(desc, width/6, height - 80, 460, 80);
+        }
+
+        function drawBagua(x, y, angle){
+            push();
+            translate(x, y);
+            rotate(angle);
+            stroke(0);
+            strokeWeight(4);
+            for(let i=0; i<3; i++){
+                let yoff = -12 + i*12;
+                if(i%2==0){
+                    line(-18, yoff, 18, yoff); // 陽爻
+                }else{
+                    line(-18, yoff, -2, yoff); // 陰爻左
+                    line(2, yoff, 18, yoff);   // 陰爻右
+                }
+            }
+            pop();
+        }
+    </script>
+</body>
+</html>
